@@ -1,0 +1,11 @@
+
+{
+    "redis":{
+        "url":"192.168.2.150",
+        "port":6379,
+        "auth":"jsrromteam"
+    },
+    "obdServer":{
+        "port":8124
+    }
+}
