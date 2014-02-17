@@ -6,6 +6,9 @@
         "auth":"jsrromteam"
     },
     "obdServer":{
-        "port":8124
+        "port":8001
+    },
+    "obd":{
+        "head_length":12
     }
 }

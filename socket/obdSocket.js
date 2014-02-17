@@ -2,7 +2,9 @@
  * Created by liu.xing on 14-1-11.
  */
 var net = require('net');
-var OdbService = require('../service/obdService');
+var iconv = require('iconv-lite');
+var logger = require('../app').logger('obdSocket');
+var clientUtil = require('../socket/ClientUtil');
 
 /**
  * Expose Sockets initialization
@@ -10,42 +12,24 @@ var OdbService = require('../service/obdService');
 
 module.exports = ServerSocket;
 
-var clients = [];
 
 function ServerSocket(app){
     var config = app.get('config');
-    var client = app.get('redisClient');
     var odbServerport = config.obdServer.port;
+    var headLength = config.obd.head_length;  //消息头长度
     var server = net.createServer(function(socket){
-        clients.push(socket);
-        console.log(socket.remoteAddress+' is connected!');
-        socket.write('hello client');
-        console.log("current client count:"+clients.length);
-
-
+        clientUtil.clientConnected(socket);  //客户端连接
         socket.on('end', function() {
-            //do something
+            clientUtil.clientDisconnect(socket);
         });
 
         socket.on('data',function(data){
-            var odbServer = new OdbService(data,socket);
-            //odbServer.print();
-            try{
-                console.log(data);
-                var buf = odbServer.decodeMsg(data);
-                console.log(buf);
-                var obdMsg = odbServer.getMsgObject(buf);
-                console.log(obdMsg.getMsgHead().toString('hex')+"   " +obdMsg.getMsgBody().toString('hex')+"   "+obdMsg.getCheckCode().toString('hex'));
-            }catch(e){
-                socket.write("your message is error!");
-                console.log(e.stack);
-                console.error("错误："+e.message);
-            }
+            clientUtil.clientData(data,socket);
         });
-
     });
     server.listen(odbServerport,function(){
         console.log('server is run on port %d',odbServerport);
+        logger.info('server is run on port %d --log4j',odbServerport);
     });
     server.on('listening',function(){
         console.log('server on port %d success',odbServerport);
@@ -59,18 +43,6 @@ function ServerSocket(app){
             }, 5000);
         }
     });
-
-}
-
-
-
-function SendToAll(fromSocket,data){
-    for(var i = 0; i < clients.length;i++){
-        var toSocket = clients[i];
-        if(toSocket !== fromSocket){
-            toSocket.write(data);
-        }
-    }
 }
 
 
